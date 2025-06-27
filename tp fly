@@ -1,0 +1,121 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+local mouse = player:GetMouse()
+
+local speed = 40
+local targetPosition = nil
+local moving = false
+local connections = {}
+
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "FlyGui"
+gui.ResetOnSpawn = false
+
+local infoLabel = Instance.new("TextLabel", gui)
+infoLabel.Size = UDim2.new(0, 500, 0, 60)
+infoLabel.Position = UDim2.new(0.5, -250, 0.05, 0)
+infoLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+infoLabel.BackgroundTransparency = 0.2
+infoLabel.TextColor3 = Color3.new(1, 1, 1)
+infoLabel.Font = Enum.Font.GothamBold
+infoLabel.TextSize = 24
+infoLabel.Text = "🖱️ Middle-click to set target | Press Z to fly"
+
+local posLabel = Instance.new("TextLabel", gui)
+posLabel.Size = UDim2.new(0, 300, 0, 40)
+posLabel.Position = UDim2.new(1, -310, 0.05, 0)
+posLabel.BackgroundColor3 = Color3.new(0, 0, 0)
+posLabel.BackgroundTransparency = 0.3
+posLabel.TextColor3 = Color3.fromRGB(255, 200, 200)
+posLabel.Font = Enum.Font.Code
+posLabel.TextSize = 18
+posLabel.TextXAlignment = Enum.TextXAlignment.Left
+posLabel.Text = "No target set"
+
+local marker = Instance.new("Part")
+marker.Anchored = true
+marker.CanCollide = false
+marker.Shape = Enum.PartType.Ball
+marker.Size = Vector3.new(1.5, 1.5, 1.5)
+marker.Material = Enum.Material.Neon
+marker.BrickColor = BrickColor.new("Bright red")
+marker.Transparency = 1
+marker.Parent = workspace
+
+local function cleanup()
+	for _, c in ipairs(connections) do c:Disconnect() end
+	gui:Destroy()
+	marker:Destroy()
+	script:Destroy()
+end
+
+table.insert(connections, UserInputService.InputBegan:Connect(function(input, gpe)
+	if gpe then return end
+
+	if input.UserInputType == Enum.UserInputType.MouseButton3 then
+		local hit = mouse.Hit
+		if hit then
+			targetPosition = hit.Position + Vector3.new(0, 2.5, 0)
+			marker.Position = targetPosition
+			marker.Transparency = 0
+			infoLabel.Text = "🎯 Target set. Press Z to fly."
+			posLabel.Text = string.format("Target: (%.1f, %.1f, %.1f)", targetPosition.X, targetPosition.Y, targetPosition.Z)
+		end
+	end
+
+	if input.KeyCode == Enum.KeyCode.Z and targetPosition and not moving then
+		local char = player.Character
+		if not char then return end
+		local root = char:FindFirstChild("HumanoidRootPart")
+		local hum = char:FindFirstChildOfClass("Humanoid")
+		if not root or not hum then return end
+
+		moving = true
+		hum.AutoRotate = false
+
+		local conn
+		conn = RunService.RenderStepped:Connect(function(dt)
+			if not char or not root or not hum then
+				conn:Disconnect()
+				moving = false
+				return
+			end
+
+			local direction = (targetPosition - root.Position)
+			local dist = direction.Magnitude
+			if dist < 1 then
+				conn:Disconnect()
+				moving = false
+				hum.AutoRotate = true
+				root.CFrame = CFrame.new(targetPosition)
+				infoLabel.Text = "✅ Arrived!"
+				wait(1)
+				infoLabel.Text = "🖱️ Middle-click to set target | Press Z to fly"
+				return
+			end
+
+			local moveDist = math.min(speed * dt, dist)
+			local moveVec = direction.Unit * moveDist
+			root.CFrame = root.CFrame + moveVec
+		end)
+	end
+
+	if input.KeyCode == Enum.KeyCode.Minus then
+		cleanup()
+	end
+end))
+
+player.CharacterAdded:Connect(function(char)
+	moving = false
+	targetPosition = nil
+	infoLabel.Text = "🖱️ Middle-click to set target | Press Z to fly"
+	posLabel.Text = "No target set"
+	marker.Transparency = 1
+end)
+
+if player.Character then
+	player.Character:WaitForChild("HumanoidRootPart")
+	player.Character:WaitForChild("Humanoid")
+end
