@@ -3,7 +3,8 @@ local Workspace = game:GetService("Workspace")
 
 local targetNames = {
 	["Cocofanto Elefanto"] = true,
-	["Girafa Celestre"] = true
+	["Girafa Celestre"] = true,
+	["Tralalero Tralala"] = true
 }
 
 -- Function to add a Highlight if it doesn't already have one
