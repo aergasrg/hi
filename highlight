@@ -1,0 +1,36 @@
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
+local targetNames = {
+	["Cocofanto Elefanto"] = true,
+	["Girafa Celestre"] = true
+}
+
+-- Function to add a Highlight if it doesn't already have one
+local function tryHighlight(instance)
+	if instance:IsA("Model") or instance:IsA("BasePart") then
+		if not instance:FindFirstChildOfClass("Highlight") then
+			local highlight = Instance.new("Highlight")
+			highlight.Name = "AutoHighlight"
+			highlight.FillColor = Color3.new(1, 1, 0) -- Yellow
+			highlight.OutlineColor = Color3.new(0, 0, 0) -- Black
+			highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+			highlight.Parent = instance
+		end
+	end
+end
+
+-- Check function to find targets and highlight them
+local function checkForTargets()
+	for _, descendant in ipairs(Workspace:GetDescendants()) do
+		if targetNames[descendant.Name] then
+			tryHighlight(descendant)
+		end
+	end
+end
+
+-- Run every second
+while true do
+	task.wait(1)
+	checkForTargets()
+end
